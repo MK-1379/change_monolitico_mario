@@ -1,0 +1,120 @@
+[data-bs-theme="dark"] {
+  --bs-body-bg: #1c1e23;
+  --bs-body-bg-rgb: 28, 30, 35;
+  --bs-tertiary-bg: #2d2f37;
+  --bs-tertiary-bg-rgb: 45, 47, 55;
+  --bs-border-color: #575b68;
+}
+
+body {
+  font-family: "Commissioner", sans-serif;
+}
+
+.logo {
+  color: #e8453c;
+  font-weight: 700;
+}
+
+.barra-roja {
+  width: 48px;
+  height: 6px;
+  background-color: #e8453c;
+}
+
+.historia-img {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+}
+
+.paso {
+  width: 56px;
+  height: 56px;
+}
+
+.card-img-top {
+  height: 160px;
+  object-fit: cover;
+}
+
+.foto-peticion {
+  height: 300px;
+  object-fit: cover;
+}
+
+.peticiones-landing img {
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.peticiones-landing .badge {
+    transition: background-color 0.2s ease-in-out;
+}
+
+.peticiones-landing:hover img {
+    border-color: #0d6efd;
+}
+
+.peticiones-landing:hover .badge {
+    background-color: #0d6efd !important;
+}
+
+.peticion-card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.peticion-card:hover {
+  transform: scale(1.05);
+}
+
+.enlace-flecha .bi-arrow-right {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.enlace-flecha:hover .bi-arrow-right {
+  transform: translateX(6px);
+}
+
+.explorar-card {
+  transition: background-color 0.2s ease-in-out;
+}
+
+.explorar-card:hover {
+  background-color: #575b68;
+}
+
+.flecha-firmas .bi-chevron-down {
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+.flecha-firmas[aria-expanded="true"] .bi-chevron-down {
+    transform: rotate(180deg);
+}
+
+.avatar {
+    width: 56px;
+    height: 56px;
+    color: #3a3e49;
+}
+
+.circulo {
+    width: 48px;
+    height: 48px;
+}
+
+.foto-peticion {
+    height: 300px;
+    object-fit: cover;
+}
+
+.degradado {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent 70%);
+}
+
+@media (min-width: 992px) {
+    .foto-peticion {
+        height: 480px;
+    }
+}
