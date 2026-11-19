@@ -1,0 +1,23 @@
+services:
+
+  app:
+    build: .
+    image: mk1379/change-mario-monolitic:v1
+    container_name: change-mono-app
+    ports:
+      - "8001:80"
+    env_file: .env.docker
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: mariadb:11
+    container_name: change-mono-db
+    env_file: .env.docker
+    volumes:
+      - datos-change-mono:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  datos-change-mono:
