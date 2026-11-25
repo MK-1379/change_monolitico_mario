@@ -87,7 +87,7 @@
         </section>
 
         <section id="patrocinadas">
-            <h2 class="h4 fw-bold mb-3">Peticiones</h2>
+            <h2 class="h4 fw-bold mb-3">{{ $titulo ?? 'Peticiones' }}</h2>
 
             @if ($peticiones->isEmpty())
                 <p class="text-body-secondary">Todavía no hay peticiones.</p>
@@ -97,8 +97,12 @@
                 @foreach ($peticiones as $peticion)
                     <div class="col">
                         <div class="card h-100 shadow-sm peticion-card">
-                            {{-- La tabla no tiene imagen: ponemos una de las de public/img según la posición --}}
-                            <img src="{{ asset('img/listado-' . str_pad($loop->index % 11 + 1, 2, '0', STR_PAD_LEFT) . '.webp') }}" class="card-img-top" alt="">
+                            {{-- Si la petición tiene imagen subida se usa; si no, una de las de public/img --}}
+                            @if ($peticion->files->isNotEmpty())
+                                <img src="{{ asset($peticion->files->first()->file_path) }}" class="card-img-top" alt="">
+                            @else
+                                <img src="{{ asset('img/listado-' . str_pad($loop->index % 11 + 1, 2, '0', STR_PAD_LEFT) . '.webp') }}" class="card-img-top" alt="">
+                            @endif
                             <a href="{{ route('peticiones.show', $peticion->id) }}" class="btn bg-secondary rounded-circle position-absolute top-0 end-0 m-2" aria-label="Ver petición"><i class="bi bi-arrow-right text-black"></i></a>
                             <div class="card-body d-flex flex-column">
                                 <span class="small text-body-secondary">{{ $peticion->categoria?->nombre }}</span>
@@ -110,6 +114,10 @@
                         </div>
                     </div>
                 @endforeach
+            </div>
+
+            <div class="mt-4">
+                {{ $peticiones->links() }}
             </div>
         </section>
     

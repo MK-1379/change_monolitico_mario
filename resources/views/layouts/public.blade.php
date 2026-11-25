@@ -31,7 +31,8 @@
             <div class="collapse navbar-collapse" id="menu">
                 <ul class="navbar-nav me-auto gap-4">
                     @if (Auth::check())
-                        <li class="nav-item d-none d-lg-block fw-bold"><a class="nav-link" href="{{ route('peticiones.mine') }}">Mis peticiones</a></li>
+                        <li class="nav-item fw-bold"><a class="nav-link" href="{{ route('peticiones.mine') }}">Mis peticiones</a></li>
+                        <li class="nav-item fw-bold"><a class="nav-link" href="{{ route('peticiones.peticionesfirmadas') }}">Mis firmas</a></li>
                     @endif
                     <li class="nav-item fw-bold"><a class="nav-link" href="#">Programa de socios/as</a></li>
                     <li class="nav-item fw-bold"><a class="nav-link" href="{{ route('peticiones.index') }}"><i class="bi bi-search"></i> Buscar</a></li>
@@ -59,6 +60,23 @@
     </nav>
 
     <main>
+        @if (session('error') || session('success'))
+            <div class="container mt-3">
+                @if (session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                    </div>
+                @endif
+                @if (session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                    </div>
+                @endif
+            </div>
+        @endif
+
         @yield('content')
     </main>
 

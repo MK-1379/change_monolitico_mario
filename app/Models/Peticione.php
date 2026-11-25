@@ -23,7 +23,7 @@ class Peticione extends Model
 
     public function firmas()
     {
-        return $this->belongsToMany(User::class);
+        return $this->belongsToMany(User::class)->withTimestamps();
     }
 
     public function files()

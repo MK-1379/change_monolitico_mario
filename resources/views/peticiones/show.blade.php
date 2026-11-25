@@ -7,8 +7,13 @@
         <div class="row g-4">
             <div class="col-lg-8">
                 <div class="card border-0 text-white">
-                    <img src="{{ asset('img/detalle-01.webp') }}"
-                        class="card-img foto-peticion" alt="Señora de espaldas">
+                    @if ($peticion->files->isNotEmpty())
+                        <img src="{{ asset($peticion->files->first()->file_path) }}"
+                            class="card-img foto-peticion" alt="{{ $peticion->titulo }}">
+                    @else
+                        <img src="{{ asset('img/detalle-01.webp') }}"
+                            class="card-img foto-peticion" alt="Señora de espaldas">
+                    @endif
                     <div class="card-img-overlay d-flex flex-column justify-content-end p-4 degradado">
                         <span class="barra-roja d-block mb-3"></span>
                         <h1 class="fw-bold mb-0">{{ $peticion->titulo }}</h1>
@@ -80,25 +85,30 @@
                         <h2 class="h4 fw-bold">Firma esta petición</h2>
                         <form action="{{ route('peticiones.firmar', $peticion->id) }}" method="POST">
                             @csrf
-                            <div class="mb-3">
-                                <label for="nombre" class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="nombre" required>
-                                <div class="invalid-feedback">Escribe tu nombre.</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="apellidos" class="form-label">Apellidos</label>
-                                <input type="text" class="form-control" id="apellidos" required>
-                                <div class="invalid-feedback">Escribe tus apellidos.</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Correo electrónico</label>
-                                <input type="email" class="form-control" id="email" required>
-                                <div class="invalid-feedback">Introduce un correo válido.</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="ubicacion" class="form-label">Ubicación</label>
-                                <input type="text" class="form-control" id="ubicacion" value="Logroño, 26007 España">
-                            </div>
+                            @auth
+                                <p class="small">Vas a firmar como <strong>{{ Auth::user()->name }}</strong>.</p>
+                            @else
+                                <p class="small">Para firmar tienes que <a href="{{ route('login') }}">iniciar sesión</a>.</p>
+                                <div class="mb-3">
+                                    <label for="nombre" class="form-label">Nombre</label>
+                                    <input type="text" class="form-control" id="nombre" required>
+                                    <div class="invalid-feedback">Escribe tu nombre.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="apellidos" class="form-label">Apellidos</label>
+                                    <input type="text" class="form-control" id="apellidos" required>
+                                    <div class="invalid-feedback">Escribe tus apellidos.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Correo electrónico</label>
+                                    <input type="email" class="form-control" id="email" required>
+                                    <div class="invalid-feedback">Introduce un correo válido.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="ubicacion" class="form-label">Ubicación</label>
+                                    <input type="text" class="form-control" id="ubicacion" value="Logroño, 26007 España">
+                                </div>
+                            @endauth
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="radio" name="avisos" id="avisosSi" required>
                                 <label class="form-check-label small" for="avisosSi">Quiero saber si esta petición gana

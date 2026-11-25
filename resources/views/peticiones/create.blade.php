@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="bg-body-secondary pt-3">
-        <form action="{{ route('peticiones.store') }}" method="POST">
+        <form action="{{ route('peticiones.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="container">
                 <div class="bg-body rounded-top-3 overflow-hidden">
@@ -13,11 +13,13 @@
                             <div class="col-11 col-lg-8">
                                 <span class="barra-roja d-block mb-3"></span>
                                 <label for="titulo" class="form-label small">Título</label>
-                                <textarea class="form-control bg-black border-light fs-1 fw-bold" id="titulo" name="titulo" rows="2"
-                                    placeholder="Tu título único" maxlength="90" required></textarea>
-                                <div class="invalid-feedback">
-                                    <i class="bi bi-exclamation-triangle-fill"></i> El título es obligatorio.
-                                </div>
+                                <textarea class="form-control bg-black border-light fs-1 fw-bold @error('titulo') is-invalid @enderror" id="titulo" name="titulo" rows="2"
+                                    placeholder="Tu título único" maxlength="90" required>{{ old('titulo') }}</textarea>
+                                @error('titulo')
+                                    <div class="invalid-feedback">
+                                        <i class="bi bi-exclamation-triangle-fill"></i> {{ $message }}
+                                    </div>
+                                @enderror
                             </div>
                         </div>
                     </div>
@@ -32,8 +34,13 @@
                                 <label for="imagen" class="btn btn-outline-light btn-sm fw-bold p-2 px-3 rounded-3">
                                     <i class="bi bi-upload"></i> Usar mi foto
                                 </label>
-                                <input type="file" class="visually-hidden" id="imagen" accept="image/png, image/jpeg">
+                                <input type="file" class="visually-hidden" id="imagen" name="file" accept="image/*"
+                                    onchange="document.getElementById('nombreImagen').textContent = this.files[0] ? this.files[0].name : ''">
+                                <span id="nombreImagen" class="small text-body-secondary align-self-center"></span>
                             </div>
+                            @error('file')
+                                <div class="alert alert-danger py-2"><i class="bi bi-exclamation-triangle-fill"></i> {{ $message }}</div>
+                            @enderror
 
                             <label for="causa" class="h2 fw-bold mb-3">La causa</label>
                             <div class="btn-toolbar bg-primary-subtle border border-bottom-0 rounded-top p-1" role="toolbar" aria-label="Formato de texto">
@@ -48,10 +55,12 @@
                                     <button type="button" class="btn btn-sm" aria-label="Ayuda"><i class="bi bi-question-circle"></i></button>
                                 </div>
                             </div>
-                            <textarea class="form-control rounded-top-0" id="causa" name="descripcion" rows="12" minlength="50" required></textarea>
-                            <div class="invalid-feedback">
-                                <i class="bi bi-exclamation-triangle-fill"></i> La descripción es obligatoria.
-                            </div>
+                            <textarea class="form-control rounded-top-0 @error('descripcion') is-invalid @enderror" id="causa" name="descripcion" rows="12" minlength="50" required>{{ old('descripcion') }}</textarea>
+                            @error('descripcion')
+                                <div class="invalid-feedback">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> {{ $message }}
+                                </div>
+                            @enderror
                             <fieldset class="mt-5">
                                 <legend class="h2 fw-bold mb-3">¿Dónde quieres lograr el cambio?</legend>
                                 <div class="d-flex flex-wrap gap-2 mb-3">
@@ -75,50 +84,35 @@
                             <fieldset class="mt-5">
                                 <legend class="h2 fw-bold mb-3">¿Sobre qué tema trata?</legend>
                                 <div class="d-flex flex-wrap gap-2">
-                                    <input type="checkbox" class="btn-check" id="temaSanidad">
-                                    <label class="btn btn-outline-primary btn-sm" for="temaSanidad">Sanidad</label>
-                                    <input type="checkbox" class="btn-check" id="temaEducacion">
-                                    <label class="btn btn-outline-primary btn-sm" for="temaEducacion">Educación</label>
-                                    <input type="checkbox" class="btn-check" id="temaMedio">
-                                    <label class="btn btn-outline-primary btn-sm" for="temaMedio">Medio Ambiente</label>
-                                    <input type="checkbox" class="btn-check" id="temaAnimales">
-                                    <label class="btn btn-outline-primary btn-sm" for="temaAnimales">Animales</label>
-                                    <input type="checkbox" class="btn-check" id="temaJusticia">
-                                    <label class="btn btn-outline-primary btn-sm" for="temaJusticia">Justicia</label>
+                                    @foreach ($categorias as $categoria)
+                                        <input type="radio" class="btn-check" name="category" id="categoria{{ $categoria->id }}"
+                                            value="{{ $categoria->id }}" @checked(old('category') == $categoria->id) required>
+                                        <label class="btn btn-outline-primary btn-sm" for="categoria{{ $categoria->id }}">{{ $categoria->nombre }}</label>
+                                    @endforeach
                                 </div>
+                                @if ($categorias->isEmpty())
+                                    <p class="text-body-secondary">Todavía no hay categorías.</p>
+                                @endif
+                                @error('category')
+                                    <div class="alert alert-danger py-2 mt-2"><i class="bi bi-exclamation-triangle-fill"></i> {{ $message }}</div>
+                                @enderror
                             </fieldset>
 
                             <div class="mt-5">
                                 <label for="destinatario" class="h2 fw-bold mb-3">¿Quién puede hacer realidad este cambio?</label>
-                                <input type="text" class="form-control" id="destinatario" name="destinatario" placeholder="Ej.: Ayuntamiento de Logroño" required>
-                                <div class="invalid-feedback"><i class="bi bi-exclamation-triangle-fill"></i> Indica a quién va dirigida.</div>
+                                <input type="text" class="form-control @error('destinatario') is-invalid @enderror" id="destinatario" name="destinatario"
+                                    value="{{ old('destinatario') }}" placeholder="Ej.: Ayuntamiento de Logroño" required>
+                                @error('destinatario')
+                                    <div class="invalid-feedback"><i class="bi bi-exclamation-triangle-fill"></i> {{ $message }}</div>
+                                @enderror
                             </div>
 
                             <fieldset class="mt-5">
                                 <legend class="h2 fw-bold mb-3">Tus datos</legend>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="nombre" class="form-label">Nombre</label>
-                                        <input type="text" class="form-control" id="nombre" autocomplete="given-name" required>
-                                        <div class="invalid-feedback">Escribe tu nombre.</div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="apellidos" class="form-label">Apellidos</label>
-                                        <input type="text" class="form-control" id="apellidos" autocomplete="family-name" required>
-                                        <div class="invalid-feedback">Escribe tus apellidos.</div>
-                                    </div>
-                                    <div class="col-12">
-                                        <label for="email" class="form-label">Correo electrónico</label>
-                                        <input type="email" class="form-control" id="email" autocomplete="email" required>
-                                        <div class="invalid-feedback">Introduce un correo válido.</div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="condiciones" required>
-                                            <label class="form-check-label" for="condiciones">Acepto las Condiciones de servicio y la Política de privacidad</label>
-                                            <div class="invalid-feedback">Debes aceptar las condiciones.</div>
-                                        </div>
-                                    </div>
+                                <p>Vas a publicar la petición como <strong>{{ Auth::user()->name }}</strong> ({{ Auth::user()->email }}).</p>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="condiciones" required>
+                                    <label class="form-check-label" for="condiciones">Acepto las Condiciones de servicio y la Política de privacidad</label>
                                 </div>
                             </fieldset>
                         </div>
