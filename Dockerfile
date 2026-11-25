@@ -1,41 +1,29 @@
-# ---------- Etapa 1: compilar el CSS y el JS con Vite ----------
-FROM node:22-alpine AS assets
+FROM node:26-alpine AS assets
 
 WORKDIR /app
-
 COPY package.json package-lock.json ./
 RUN npm ci
-
 COPY . .
 RUN npm run build
 
 
-# ---------- Etapa 2: la aplicación con PHP + Apache ----------
 FROM php:8.3-apache
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends git unzip && \
-    docker-php-ext-install pdo_mysql && \
-    a2enmod rewrite && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y unzip git
+RUN docker-php-ext-install pdo_mysql
 
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
-    /etc/apache2/sites-available/*.conf \
-    /etc/apache2/apache2.conf \
-    /etc/apache2/conf-available/*.conf
+RUN a2enmod rewrite
+
+RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
-
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --no-scripts --no-autoloader
-
 COPY . .
 COPY --from=assets /app/public/build ./public/build
 
-RUN composer dump-autoload --optimize && \
-    chown -R www-data:www-data storage bootstrap/cache
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+RUN chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 80

@@ -1,202 +1,131 @@
-# Change.org · Réplica monolítica en Laravel
+# Change.org monolítico · Despliegue con Docker
 
-Réplica de [Change.org](https://www.change.org) hecha con **Laravel** como aplicación monolítica: el servidor genera las páginas con **Blade** y las sirve ya montadas al navegador. Incluye registro e inicio de sesión de usuarios, y un listado y detalle de peticiones que se leen de la base de datos.
+Réplica de Change.org hecha con **Laravel 12** como aplicación monolítica (módulo DWES): vistas Blade, autenticación con Laravel Breeze y estilos compilados con Vite. Desplegada con **Docker** y **Docker Compose** para el módulo de Despliegue de Aplicaciones Web (2º DAW).
 
-Las vistas parten del diseño que hice con Bootstrap en el módulo de **Diseño de Interfaces Web (DIW)**, adaptado a Laravel.
+El despliegue no necesita tener instalado PHP, Composer, Node.js ni MySQL en el equipo: todo se ejecuta en contenedores.
 
-> Práctica del módulo **Desarrollo Web en Entorno Servidor (DWES)** · 2º DAW · CSC Jesuitas Logroño
+## Requisitos
 
----
+- Docker Desktop (o Docker Engine con Docker Compose)
+- El puerto **8001** libre en el equipo
 
-## Tecnologías
+## Arquitectura
 
-| Parte | Tecnología |
+| Servicio | Imagen | Función | Puerto |
+|---|---|---|---|
+| `app` | `mk1379/change-monolitico:v1` (construida desde `node:26-alpine` y `php:8.3-apache`) | Apache + PHP 8.3 + Laravel | `8001` → `80` |
+| `db` | `mysql:8.4` | Base de datos MySQL | Solo red interna |
+
+- La imagen se construye en **dos etapas** (*multi-stage*). En la primera, Node 26 instala las dependencias (`npm ci`) y compila el CSS y el JavaScript (`npm run build`). En la segunda, la imagen de PHP y Apache copia solo la carpeta `public/build` ya compilada. La imagen final no lleva Node ni `node_modules`.
+- La aplicación se conecta a la base de datos con el nombre del servicio (`DB_HOST=db`).
+- Los datos de MySQL se guardan en el volumen `datos-change-mono`, así que no se pierden al borrar los contenedores.
+- `db` tiene un *healthcheck*, y `app` no arranca hasta que MySQL está lista.
+
+## Ficheros del despliegue
+
+| Fichero | Para qué sirve |
 |---|---|
-| Backend | Laravel 12 · PHP 8.2 |
-| Base de datos | MySQL / MariaDB (XAMPP) |
-| Vistas | Blade |
-| Estilos de la web | Bootstrap 5.3 · Bootstrap Icons · CSS propio |
-| Autenticación | Laravel Breeze (Blade + Tailwind) |
-
----
-
-## Funcionalidades
-
-**Usuarios**
-- Registro de usuarios. Al registrarte, la aplicación te lleva al login con un mensaje para que inicies sesión con tus datos.
-- Inicio y cierre de sesión.
-- Dashboard y edición del perfil (de Breeze), en modo oscuro.
-
-**Barra de navegación según la sesión**
-
-| Sin sesión | Con sesión iniciada |
-|---|---|
-| Registrarse · Entrar | Mis peticiones · tu nombre (enlace al dashboard) · Logout |
-
-**Peticiones**
-- Listado de peticiones de la base de datos, con categoría, destinatario y número de firmas.
-- Página de detalle de cada petición, con título, descripción, destinatario, categoría, creador y fecha.
-
----
-
-## Base de datos
-
-### Tablas
-
-| Tabla | Contenido |
-|---|---|
-| `users` | Usuarios (de Laravel) |
-| `categorias` | Categorías de las peticiones |
-| `peticiones` | Peticiones: `titulo`, `descripcion`, `destinatario`, `firmantes`, `estado` (`aceptada` / `pendiente`), `user_id`, `categoria_id` |
-| `peticione_user` | Tabla pivote de las firmas, con clave primaria compuesta (`user_id`, `peticione_id`) |
-| `files` | Archivos de una petición (`name`, `file_path`, `peticione_id`) |
-
-### Relaciones
-
-| Relación | Tipo | En los modelos |
-|---|---|---|
-| Un usuario crea muchas peticiones | 1:N | `User::peticiones()` · `Peticione::user()` |
-| Una categoría tiene muchas peticiones | 1:N | `Categoria::peticiones()` · `Peticione::categoria()` |
-| Una petición tiene muchos archivos | 1:N | `Peticione::files()` · `File::peticione()` |
-| Un usuario firma muchas peticiones y una petición tiene muchos firmantes | N:M | `User::firmas()` · `Peticione::firmas()` |
-
-> El modelo se llama `Peticione` (y no `Peticion`) para que Laravel deduzca bien el nombre de la tabla: le añade una **s** al nombre del modelo y queda `peticiones`.
-
----
+| `Dockerfile` | Construye la imagen en dos etapas: compilación de los recursos con Node y aplicación con PHP 8.3 + Apache, `pdo_mysql`, `mod_rewrite`, la carpeta `public` como raíz y dependencias de Composer sin las de desarrollo |
+| `compose.yaml` | Define los servicios `app` y `db`, el puerto, el volumen y el healthcheck |
+| `.dockerignore` | Deja fuera de la imagen `vendor`, `node_modules`, `public/build`, los `.env` y la caché generada en Windows |
+| `.env.example` | Plantilla de configuración, sin contraseñas reales |
 
 ## Instalación
 
-### Requisitos
+1. Entra en la carpeta del proyecto y crea el `.env` a partir de la plantilla:
 
-- PHP 8.2 o superior
-- Composer
-- Node.js y npm
-- MySQL o MariaDB (por ejemplo, con XAMPP)
-
-### Pasos
-
-1. Clona el repositorio y entra en la carpeta:
-   ```bash
-   git clone <url-del-repositorio>
-   cd change_mario_monolitic
-   ```
-
-2. Instala las dependencias de PHP y de JavaScript:
-   ```bash
-   composer install
-   npm install
-   ```
-
-3. Crea el archivo `.env` y genera la clave de la aplicación:
    ```bash
    cp .env.example .env
-   php artisan key:generate
    ```
 
-4. Crea una base de datos vacía en MySQL y pon sus datos en el `.env`:
+   En Windows (PowerShell): `copy .env.example .env`
+
+2. Abre el `.env` y pon tus contraseñas:
+
    ```env
-   DB_CONNECTION=mysql
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
    DB_DATABASE=change_monolitico_mario
-   DB_USERNAME=root
-   DB_PASSWORD=
+   DB_USERNAME=mario
+   DB_PASSWORD=pon_una_password
+   DB_ROOT_PASSWORD=pon_otra_password
    ```
 
-5. Crea las tablas:
+   `DB_USERNAME` no puede ser `root`: la imagen de MySQL crea ese usuario aparte. Estos mismos valores los usan Laravel y el contenedor de MySQL.
+
+3. Construye la imagen (tarda un poco más que la de la API porque también compila los estilos):
+
    ```bash
-   php artisan migrate
+   docker compose build
    ```
 
-6. Compila los estilos de las vistas de Breeze (login, registro, dashboard):
+4. Genera la clave de la aplicación y pégala en `APP_KEY=` del `.env`:
+
    ```bash
-   npm run build
+   docker compose run --rm app php artisan key:generate --show
    ```
 
-7. Arranca el servidor:
+5. Levanta los servicios y comprueba que `db` aparece como `healthy`:
+
    ```bash
-   php artisan serve
+   docker compose up -d
+   docker compose ps
    ```
-   La aplicación queda en <http://127.0.0.1:8000>.
 
-### Datos de prueba
+6. Crea las tablas:
 
-La aplicación todavía no permite crear peticiones desde la web. Para ver algo en el listado, añade datos a mano en la base de datos, en este orden: **usuario → categoría → petición**.
+   ```bash
+   docker compose exec app php artisan migrate
+   ```
 
-```sql
-INSERT INTO categorias (nombre, created_at, updated_at)
-VALUES ('Educación', NOW(), NOW());
+La aplicación queda disponible en **http://localhost:8001**.
 
-INSERT INTO peticiones (titulo, descripcion, destinatario, firmantes, estado, user_id, categoria_id, created_at, updated_at)
-VALUES ('Más pediatras en los centros de salud rurales',
-        'En muchos pueblos solo hay pediatra un día a la semana.',
-        'Consejería de Salud de La Rioja', 0, 'pendiente', 1, 1, NOW(), NOW());
+## Uso
+
+| URL | Página |
+|---|---|
+| `/` | Portada |
+| `/register` y `/login` | Registro e inicio de sesión (Laravel Breeze) |
+| `/dashboard` | Panel del usuario |
+| `/peticiones/index` | Listado de peticiones |
+| `/peticiones/{id}` | Detalle de una petición |
+
+La aplicación todavía no permite crear peticiones desde la web (crear, firmar y "Mis peticiones" están pendientes en DWES). Para tener datos de prueba, registra primero un usuario en `/register` y después crea una categoría y una petición con la consola de Laravel:
+
+```bash
+docker compose exec app php artisan tinker
 ```
 
-`user_id = 1` tiene que ser un usuario que exista. Créalo antes registrándote en la aplicación.
-
----
-
-## Rutas
-
-| Método | URL | Nombre | Qué hace | Estado |
-|---|---|---|---|---|
-| GET | `/` | `home` | Portada | ✔ |
-| GET | `/peticiones/index` | `peticiones.index` | Listado de peticiones | ✔ |
-| GET | `/peticiones/{id}` | `peticiones.show` | Detalle de una petición | ✔ |
-| GET | `/peticion/add` | `peticiones.create` | Formulario para crear una petición | Pendiente |
-| POST | `/peticion` | `peticiones.store` | Guardar una petición | Pendiente |
-| POST | `/peticiones/firmar/{id}` | `peticiones.firmar` | Firmar una petición | Pendiente |
-| GET | `/mispeticiones` | `peticiones.mine` | Peticiones del usuario | Pendiente |
-| GET | `/peticionesfirmadas` | `peticiones.peticionesfirmadas` | Peticiones firmadas por el usuario | Pendiente |
-| PUT | `/peticiones/{id}` | `peticiones.update` | Editar una petición | Pendiente |
-| DELETE | `/peticiones/{id}` | `peticiones.delete` | Borrar una petición | Pendiente |
-| GET | `/dashboard` | `dashboard` | Panel del usuario (Breeze) | ✔ |
-| GET | `/login` · `/register` | `login` · `register` | Inicio de sesión y registro (Breeze) | ✔ |
-| POST | `/logout` | `logout` | Cerrar sesión (Breeze) | ✔ |
-
-Las rutas marcadas como **Pendiente** ya están definidas en `routes/web.php`, pero su método todavía no existe en `PeticioneController`. Se harán en las siguientes fases de la práctica.
-
----
-
-## Estructura
-
-```
-app/
-├── Http/Controllers/
-│   ├── PagesController.php        Portada
-│   ├── PeticioneController.php    index y show
-│   ├── CategoriaController.php
-│   ├── UserController.php
-│   ├── FileController.php
-│   └── Auth/                      Controladores de Breeze
-└── Models/
-    ├── User.php
-    ├── Peticione.php
-    ├── Categoria.php
-    └── File.php
-
-resources/views/
-├── layouts/
-│   ├── public.blade.php           Layout de la web: navbar y footer de DIW
-│   ├── app.blade.php              Layout del dashboard (Breeze)
-│   └── guest.blade.php            Layout del login y el registro (Breeze)
-├── pages/home.blade.php           Portada
-├── peticiones/
-│   ├── index.blade.php            Listado
-│   ├── show.blade.php             Detalle
-│   └── create.blade.php           Formulario de crear (sin controlador todavía)
-└── auth/                          Vistas de login, registro, etc. (Breeze)
-
-public/
-├── css/styles.css                 Estilos de la réplica (DIW)
-├── css/estilos.css                Ajustes del layout
-├── js/main.js
-└── img/                           Imágenes de la web
+```php
+App\Models\Categoria::create(['nombre' => 'Medio ambiente']);
+$p = new App\Models\Peticione(['titulo' => 'Más carriles bici', 'descripcion' => 'Queremos más carriles bici en Logroño', 'destinatario' => 'Ayuntamiento de Logroño', 'firmantes' => 0, 'estado' => 'pendiente']);
+$p->user_id = 1;
+$p->categoria_id = 1;
+$p->save();
+exit
 ```
 
----
+## Comandos útiles
+
+| Comando | Qué hace |
+|---|---|
+| `docker compose ps` | Muestra el estado de los contenedores |
+| `docker compose logs app` | Muestra el log de la aplicación (añade `-f` para seguirlo en directo) |
+| `docker compose exec app bash` | Abre una terminal dentro del contenedor de la aplicación |
+| `docker compose down` | Para y borra los contenedores. **Los datos se conservan** en el volumen |
+| `docker compose down -v` | Borra también el volumen: **se pierden los datos** |
+| `docker compose up -d --build` | Reconstruye la imagen y vuelve a levantar los servicios tras cambiar el código o los estilos |
+
+## Problemas frecuentes
+
+| Error | Causa | Solución |
+|---|---|---|
+| `port is already allocated` | El puerto 8001 lo usa otro programa o contenedor | Para ese programa o cambia el puerto en `compose.yaml` |
+| La web se ve sin estilos | No se ha copiado `public/build` | Vuelve a construir la imagen con `docker compose build` y revisa el log de la etapa `assets` |
+| `Connection refused` al migrar | MySQL aún no está lista | Espera a que `db` salga como `healthy` en `docker compose ps` |
+| MySQL no arranca y el log habla de ficheros de datos incompatibles | El volumen tiene datos de otra base de datos (por ejemplo, de MariaDB) | `docker compose down -v` y vuelve a empezar (se borran los datos) |
+| Error 500 en "Mis peticiones", "Crear petición" o "Firmar" | Esos métodos aún no existen en `PeticioneController` | Pendiente de programar en DWES; no es un fallo del despliegue |
+| `db:seed` falla | Faker es una dependencia de desarrollo y la imagen se instala con `--no-dev` | Crea los datos de prueba desde la web y con tinker |
 
 ## Autor
 
-**Mario Díaz González** · [GitHub](https://github.com/MK-1379) · [Portfolio](https://mk-1379.github.io)
+**Mario Díaz González** · 2º DAW · CSC Jesuitas Logroño
+[GitHub](https://github.com/MK-1379) · [Portfolio](https://mk-1379.github.io)
