@@ -1,15 +1,105 @@
-# Change.org monolítico · Despliegue con Docker
+# Change.org monolítico (Laravel)
 
-Réplica de Change.org hecha con **Laravel 12** como aplicación monolítica (módulo DWES): vistas Blade, autenticación con Laravel Breeze y estilos compilados con Vite. Desplegada con **Docker** y **Docker Compose** para el módulo de Despliegue de Aplicaciones Web (2º DAW).
+Réplica de Change.org hecha con **Laravel 12** como aplicación monolítica para el módulo de Desarrollo Web en Entorno Servidor (DWES, 2º DAW): vistas Blade, autenticación con Laravel Breeze, Bootstrap 5 y estilos compilados con Vite. El diseño parte de las maquetas hechas en Diseño de Interfaces Web (DIW).
 
-El despliegue no necesita tener instalado PHP, Composer, Node.js ni MySQL en el equipo: todo se ejecuta en contenedores.
+Se puede arrancar en local (por ejemplo, con XAMPP) o desplegar con **Docker** y **Docker Compose** (módulo de Despliegue de Aplicaciones Web).
 
-## Requisitos
+## Funcionalidades
+
+- **Portada** con los temas de la base de datos y acceso al listado.
+- **Listado de peticiones aceptadas**, de la más reciente a la más antigua, paginado de 4 en 4.
+- **Peticiones por categoría**: filtro por tema desde la portada, el listado o cada tarjeta.
+- **Detalle de una petición** con sus fotos (carrusel si tiene varias).
+- **Registro, inicio y cierre de sesión** con Laravel Breeze, adaptados al diseño de la app.
+- **Crear una petición** con una o varias fotos (máximo 5 MB cada una). Se crea como *pendiente* y con 0 firmantes.
+- **Editar una petición**: cambiar sus datos, quitar fotos o añadir otras (siempre debe quedar al menos una).
+- **Borrar una petición** y sus fotos, si no tiene firmas.
+- **Firmar** una petición (una sola vez por usuario).
+- **Mis peticiones** (todas las del usuario, en cualquier estado) y **Mis firmas**.
+- **Navegación que cambia con la sesión**: nombre del usuario, enlaces privados y botón de cierre de sesión.
+- **Mensajes de éxito y error** en todas las acciones, y página 404 propia.
+
+## Base de datos
+
+| Tabla | Campos principales |
+|---|---|
+| `users` | `name`, `email`, `password` (Laravel Breeze) |
+| `categorias` | `nombre` |
+| `peticiones` | `titulo`, `descripcion`, `destinatario`, `firmantes`, `estado` (`aceptada` o `pendiente`), `user_id`, `categoria_id` |
+| `files` | `name`, `file_path`, `peticione_id` (se borran en cascada con la petición) |
+| `peticione_user` | Tabla pivote de las firmas: `user_id` y `peticione_id` como clave primaria compuesta |
+
+Relaciones en los modelos:
+
+- `Peticione` → `belongsTo` `User` (autor) y `Categoria`; `hasMany` `File`; `belongsToMany` `User` como `firmas()`.
+- `User` → `hasMany` `Peticione`; `belongsToMany` `Peticione` como `firmas()`.
+- `Categoria` → `hasMany` `Peticione`.
+
+Las fotos se guardan en `public/peticiones` y en la tabla `files` solo se guarda su ruta.
+
+## Autorización
+
+1. **Middleware `auth`** en `PeticioneController` (con `HasMiddleware`): todo exige sesión salvo el listado (`index`) y el detalle (`show`). Sin sesión, Laravel redirige al login.
+2. **En las vistas**, los botones de editar y borrar solo se muestran al autor de la petición.
+3. **En el controlador**, `edit`, `update` y `delete` vuelven a comprobar que el usuario es el autor. Ocultar un botón no basta: alguien podría escribir la URL a mano.
+4. **Una petición con firmas no se puede borrar.**
+5. **No se puede firmar dos veces** la misma petición.
+
+## Instalación
+
+Primero, descarga el código:
+
+```bash
+git clone <url-del-repositorio>
+cd change_mario_monolitic
+```
+
+Después, elige una de las dos opciones.
+
+### Opción A: en local con XAMPP
+
+Requisitos: PHP 8.2 o superior, Composer, Node.js y MySQL o MariaDB (por ejemplo, el de XAMPP).
+
+1. Instala las dependencias y compila los estilos:
+
+   ```bash
+   composer install
+   npm install
+   npm run build
+   ```
+
+2. Crea el `.env` (`copy .env.example .env` en PowerShell) y cambia estas líneas, porque la plantilla viene preparada para Docker:
+
+   ```env
+   APP_URL=http://localhost:8000
+   DB_HOST=127.0.0.1
+   DB_DATABASE=change_monolitico_mario
+   DB_USERNAME=root
+   DB_PASSWORD=
+   ```
+
+3. Crea en phpMyAdmin una base de datos vacía con el nombre de `DB_DATABASE`.
+
+4. Genera la clave, crea las tablas con los datos de prueba y arranca el servidor:
+
+   ```bash
+   php artisan key:generate
+   php artisan migrate:fresh --seed
+   php artisan serve
+   ```
+
+La aplicación queda disponible en **http://localhost:8000**.
+
+### Opción B: con Docker
+
+No hace falta tener instalado PHP, Composer, Node.js ni MySQL: todo se ejecuta en contenedores.
+
+#### Requisitos
 
 - Docker Desktop (o Docker Engine con Docker Compose)
 - El puerto **8001** libre en el equipo
 
-## Arquitectura
+#### Arquitectura
 
 | Servicio | Imagen | Función | Puerto |
 |---|---|---|---|
@@ -21,7 +111,7 @@ El despliegue no necesita tener instalado PHP, Composer, Node.js ni MySQL en el 
 - Los datos de MySQL se guardan en el volumen `datos-change-mono` y las fotos subidas de las peticiones en el volumen `fotos-peticiones` (montado en `public/peticiones`). Así no se pierden al borrar o reconstruir los contenedores.
 - `db` tiene un *healthcheck*, y `app` no arranca hasta que MySQL está lista.
 
-## Ficheros del despliegue
+#### Ficheros del despliegue
 
 | Fichero | Para qué sirve |
 |---|---|
@@ -30,7 +120,7 @@ El despliegue no necesita tener instalado PHP, Composer, Node.js ni MySQL en el 
 | `.dockerignore` | Deja fuera de la imagen `vendor`, `node_modules`, `public/build`, los `.env`, las fotos subidas en local y la caché generada en Windows |
 | `.env.example` | Plantilla de configuración, sin contraseñas reales |
 
-## Instalación
+#### Pasos
 
 1. Entra en la carpeta del proyecto y crea el `.env` a partir de la plantilla:
 
@@ -102,7 +192,7 @@ Usuarios de prueba creados por los seeders (contraseña `password`):
 
 Las peticiones nuevas se crean como **pendientes** y no aparecen en el listado público hasta que se cambia su `estado` a `aceptada` en la base de datos.
 
-## Comandos útiles
+## Comandos útiles de Docker
 
 | Comando | Qué hace |
 |---|---|
