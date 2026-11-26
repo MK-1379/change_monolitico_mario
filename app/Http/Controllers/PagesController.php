@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Categoria;
+
 class PagesController extends Controller
 {
     public function home()
     {
-        return view('pages.home');
+        $categorias = Categoria::orderBy('nombre')->get();
+
+        return view('pages.home', compact('categorias'));
     }
 
 }

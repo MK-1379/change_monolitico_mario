@@ -17,6 +17,8 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__.'/auth.php';
 
+Route::get('categorias/{id}/peticiones', [\App\Http\Controllers\CategoriaController::class, 'peticiones'])->name('categorias.peticiones');
+
 Route::controller(\App\Http\Controllers\PeticioneController::class)->group(function () {
     Route::get('peticiones/index', 'index')->name('peticiones.index');
     Route::get('mispeticiones', 'listMine')->name('peticiones.mine');
@@ -28,5 +30,5 @@ Route::controller(\App\Http\Controllers\PeticioneController::class)->group(funct
     Route::delete('peticiones/{id}', 'delete')->name('peticiones.delete');
     Route::put('peticiones/{id}', 'update')->name('peticiones.update');
     Route::post('peticiones/firmar/{id}', 'firmar')->name('peticiones.firmar');
-    Route::get('peticiones/edit/{id}', 'update')->name('peticiones.edit');
+    Route::get('peticiones/edit/{id}', 'edit')->name('peticiones.edit');
 });

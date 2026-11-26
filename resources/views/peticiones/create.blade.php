@@ -32,13 +32,16 @@
                                     <i class="bi bi-image"></i> Crear imagen
                                 </button>
                                 <label for="imagen" class="btn btn-outline-light btn-sm fw-bold p-2 px-3 rounded-3">
-                                    <i class="bi bi-upload"></i> Usar mi foto
+                                    <i class="bi bi-upload"></i> Usar mis fotos
                                 </label>
-                                <input type="file" class="visually-hidden" id="imagen" name="file" accept="image/*"
-                                    onchange="document.getElementById('nombreImagen').textContent = this.files[0] ? this.files[0].name : ''">
+                                <input type="file" class="visually-hidden" id="imagen" name="files[]" accept="image/*" multiple
+                                    onchange="document.getElementById('nombreImagen').textContent = this.files.length ? this.files.length + ' imagen(es) seleccionada(s)' : ''">
                                 <span id="nombreImagen" class="small text-body-secondary align-self-center"></span>
                             </div>
-                            @error('file')
+                            @error('files')
+                                <div class="alert alert-danger py-2"><i class="bi bi-exclamation-triangle-fill"></i> {{ $message }}</div>
+                            @enderror
+                            @error('files.*')
                                 <div class="alert alert-danger py-2"><i class="bi bi-exclamation-triangle-fill"></i> {{ $message }}</div>
                             @enderror
 

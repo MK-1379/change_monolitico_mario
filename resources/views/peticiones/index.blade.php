@@ -50,41 +50,23 @@
             </div>
         </section>
 
-        <section class="mb-5">
-            <h2 class="h4 fw-bold mb-3">Temas</h2>
-            <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Política y Gobierno</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Políticas Públicas</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Gobierno Local</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Medioambiente</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Bienestar y Salud</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Educación</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Negocios y Economía</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Justicia Penal</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Gobierno Nacional</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Conservación y Derechos de los Animales</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Bienestar de Familias y Niños</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Entretenimiento y Medios</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Derechos de los Animales</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Bienestar de los Animales</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Justicia Económica</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Salud Pública</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Biodiversidad de la Fauna</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Corrupción</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Deportes</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Discapacidad</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Derechos de los niños</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Gobierno Regional</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Acceso a Atención Médica</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Conservación de la fauna</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Cuestiones Estudiantiles</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Tecnología</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Prevención de delitos</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Derechos de las Mujeres</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Contaminación del agua</a>
-                <a class="btn btn-outline-primary text-light" href="#patrocinadas">Deforestación</a>
-            </div>
-        </section>
+        {{-- Los temas salen de la tabla categorias. Solo se muestran en el listado general y por categoría --}}
+        @isset($categorias)
+            <section class="mb-5" id="temas">
+                <h2 class="h4 fw-bold mb-3">Temas</h2>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn {{ isset($categoriaActual) ? 'btn-outline-primary text-light' : 'btn-primary' }}"
+                       href="{{ route('peticiones.index') }}">Todas</a>
+                    @foreach ($categorias as $categoria)
+                        <a class="btn {{ ($categoriaActual ?? null) == $categoria->id ? 'btn-primary' : 'btn-outline-primary text-light' }}"
+                           href="{{ route('categorias.peticiones', $categoria->id) }}">{{ $categoria->nombre }}</a>
+                    @endforeach
+                </div>
+                @if ($categorias->isEmpty())
+                    <p class="text-body-secondary">Todavía no hay categorías.</p>
+                @endif
+            </section>
+        @endisset
 
         <section id="patrocinadas">
             <h2 class="h4 fw-bold mb-3">{{ $titulo ?? 'Peticiones' }}</h2>
@@ -105,7 +87,9 @@
                             @endif
                             <a href="{{ route('peticiones.show', $peticion->id) }}" class="btn bg-secondary rounded-circle position-absolute top-0 end-0 m-2" aria-label="Ver petición"><i class="bi bi-arrow-right text-black"></i></a>
                             <div class="card-body d-flex flex-column">
-                                <span class="small text-body-secondary">{{ $peticion->categoria?->nombre }}</span>
+                                @if ($peticion->categoria)
+                                    <a href="{{ route('categorias.peticiones', $peticion->categoria->id) }}" class="small text-body-secondary position-relative" style="z-index: 2">{{ $peticion->categoria->nombre }}</a>
+                                @endif
                                 <h3 class="card-title h6 fw-bold mt-1">{{ $peticion->titulo }}</h3>
                                 <p class="small text-body-secondary">Para: {{ $peticion->destinatario }}</p>
                                 <p class="fw-bold mt-auto"><i class="bi bi-vector-pen"></i> {{ $peticion->firmantes }} firmas</p>

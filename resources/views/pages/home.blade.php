@@ -150,15 +150,13 @@
                 <h2 class="display-6 fw-bold mb-3">Apoya causas que te importan</h2>
                 <p class="mb-3">Encuentra peticiones que afecten a tu comunidad.</p>
             </div>
-            <a class="btn btn-outline-light btn-lg p-3 fw-bold" href="{{ route('peticiones.index') }}">Ver todos los temas</a>
+            <a class="btn btn-outline-light btn-lg p-3 fw-bold" href="{{ route('peticiones.index') }}#temas">Ver todos los temas</a>
         </div>
 
         <div class="d-flex flex-wrap gap-2 mb-4">
-            <a class="btn btn-outline-light btn-lg fw-bold" href="{{ route('peticiones.index') }}">Sanidad <i class="bi bi-arrow-right"></i></a>
-            <a class="btn btn-outline-light btn-lg fw-bold" href="{{ route('peticiones.index') }}">Animales <i class="bi bi-arrow-right"></i></a>
-            <a class="btn btn-outline-light btn-lg fw-bold" href="{{ route('peticiones.index') }}">Medio Ambiente <i class="bi bi-arrow-right"></i></a>
-            <a class="btn btn-outline-light btn-lg fw-bold" href="{{ route('peticiones.index') }}">Educación <i class="bi bi-arrow-right"></i></a>
-            <a class="btn btn-outline-light btn-lg fw-bold" href="{{ route('peticiones.index') }}">Justicia Económica <i class="bi bi-arrow-right"></i></a>
+            @foreach ($categorias as $categoria)
+                <a class="btn btn-outline-light btn-lg fw-bold enlace-flecha" href="{{ route('categorias.peticiones', $categoria->id) }}">{{ $categoria->nombre }} <i class="bi bi-arrow-right"></i></a>
+            @endforeach
         </div>
 
         <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3">

@@ -7,7 +7,26 @@
         <div class="row g-4">
             <div class="col-lg-8">
                 <div class="card border-0 text-white">
-                    @if ($peticion->files->isNotEmpty())
+                    @if ($peticion->files->count() > 1)
+                        {{-- Varias imágenes: carrusel de Bootstrap --}}
+                        <div id="fotosPeticion" class="carousel slide">
+                            <div class="carousel-inner">
+                                @foreach ($peticion->files as $file)
+                                    <div class="carousel-item @if ($loop->first) active @endif">
+                                        <img src="{{ asset($file->file_path) }}" class="card-img foto-peticion d-block w-100" alt="{{ $peticion->titulo }}">
+                                    </div>
+                                @endforeach
+                            </div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#fotosPeticion" data-bs-slide="prev" style="z-index: 2">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Anterior</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#fotosPeticion" data-bs-slide="next" style="z-index: 2">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Siguiente</span>
+                            </button>
+                        </div>
+                    @elseif ($peticion->files->count() == 1)
                         <img src="{{ asset($peticion->files->first()->file_path) }}"
                             class="card-img foto-peticion" alt="{{ $peticion->titulo }}">
                     @else
@@ -22,6 +41,22 @@
                 </div>
                 <a href="#firmar" class="btn btn-warning btn-lg w-100 my-3 d-lg-none"><i class="bi bi-vector-pen"></i>
                     Firma la petición</a>
+
+                {{-- Solo el creador de la petición ve estos botones --}}
+                @if (Auth::check() && Auth::id() == $peticion->user_id)
+                    <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+                        <span class="small text-body-secondary me-auto"><i class="bi bi-person-check"></i> Esta petición es tuya</span>
+                        <a href="{{ route('peticiones.edit', $peticion->id) }}" class="btn btn-outline-light fw-bold">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                        <form action="{{ route('peticiones.delete', $peticion->id) }}" method="POST"
+                              onsubmit="return confirm('¿Seguro que quieres eliminar esta petición?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-outline-danger fw-bold"><i class="bi bi-trash"></i> Eliminar</button>
+                        </form>
+                    </div>
+                @endif
                 <div class="card my-4">
                     <div class="card-body">
                         <div class="row align-items-center g-3">
