@@ -13,21 +13,21 @@ El despliegue no necesita tener instalado PHP, Composer, Node.js ni MySQL en el 
 
 | Servicio | Imagen | Función | Puerto |
 |---|---|---|---|
-| `app` | `mk1379/change-monolitico:v1` (construida desde `node:26-alpine` y `php:8.3-apache`) | Apache + PHP 8.3 + Laravel | `8001` → `80` |
+| `app` | `mk1379/change-monolitico:v2` (construida desde `node:26-alpine` y `php:8.3-apache`) | Apache + PHP 8.3 + Laravel | `8001` → `80` |
 | `db` | `mysql:8.4` | Base de datos MySQL | Solo red interna |
 
 - La imagen se construye en **dos etapas** (*multi-stage*). En la primera, Node 26 instala las dependencias (`npm ci`) y compila el CSS y el JavaScript (`npm run build`). En la segunda, la imagen de PHP y Apache copia solo la carpeta `public/build` ya compilada. La imagen final no lleva Node ni `node_modules`.
 - La aplicación se conecta a la base de datos con el nombre del servicio (`DB_HOST=db`).
-- Los datos de MySQL se guardan en el volumen `datos-change-mono`, así que no se pierden al borrar los contenedores.
+- Los datos de MySQL se guardan en el volumen `datos-change-mono` y las fotos subidas de las peticiones en el volumen `fotos-peticiones` (montado en `public/peticiones`). Así no se pierden al borrar o reconstruir los contenedores.
 - `db` tiene un *healthcheck*, y `app` no arranca hasta que MySQL está lista.
 
 ## Ficheros del despliegue
 
 | Fichero | Para qué sirve |
 |---|---|
-| `Dockerfile` | Construye la imagen en dos etapas: compilación de los recursos con Node y aplicación con PHP 8.3 + Apache, `pdo_mysql`, `mod_rewrite`, la carpeta `public` como raíz y dependencias de Composer sin las de desarrollo |
-| `compose.yaml` | Define los servicios `app` y `db`, el puerto, el volumen y el healthcheck |
-| `.dockerignore` | Deja fuera de la imagen `vendor`, `node_modules`, `public/build`, los `.env` y la caché generada en Windows |
+| `Dockerfile` | Construye la imagen en dos etapas: compilación de los recursos con Node y aplicación con PHP 8.3 + Apache, `pdo_mysql`, `mod_rewrite`, la carpeta `public` como raíz y dependencias de Composer sin las de desarrollo, límite de subida de 5 MB por foto y la carpeta `public/peticiones` con permisos para Apache |
+| `compose.yaml` | Define los servicios `app` y `db`, el puerto, los volúmenes y el healthcheck |
+| `.dockerignore` | Deja fuera de la imagen `vendor`, `node_modules`, `public/build`, los `.env`, las fotos subidas en local y la caché generada en Windows |
 | `.env.example` | Plantilla de configuración, sin contraseñas reales |
 
 ## Instalación
@@ -70,11 +70,13 @@ El despliegue no necesita tener instalado PHP, Composer, Node.js ni MySQL en el 
    docker compose ps
    ```
 
-6. Crea las tablas:
+6. Crea las tablas y carga los datos de prueba (usuarios, categorías y peticiones con fotos y firmas):
 
    ```bash
-   docker compose exec app php artisan migrate
+   docker compose exec app php artisan migrate --seed
    ```
+
+   Si el volumen ya tenía tablas de una versión anterior, usa `migrate:fresh --seed` (borra los datos y empieza de cero).
 
 La aplicación queda disponible en **http://localhost:8001**.
 
@@ -82,26 +84,23 @@ La aplicación queda disponible en **http://localhost:8001**.
 
 | URL | Página |
 |---|---|
-| `/` | Portada |
+| `/` | Portada con los temas |
 | `/register` y `/login` | Registro e inicio de sesión (Laravel Breeze) |
-| `/dashboard` | Panel del usuario |
-| `/peticiones/index` | Listado de peticiones |
-| `/peticiones/{id}` | Detalle de una petición |
+| `/peticiones/index` | Listado de peticiones aceptadas |
+| `/categorias/{id}/peticiones` | Peticiones de una categoría |
+| `/peticiones/{id}` | Detalle de una petición (firmar, editar y borrar) |
+| `/peticion/add` | Crear una petición con fotos (requiere sesión) |
+| `/mispeticiones` | Mis peticiones (requiere sesión) |
+| `/peticionesfirmadas` | Mis firmas (requiere sesión) |
 
-La aplicación todavía no permite crear peticiones desde la web (crear, firmar y "Mis peticiones" están pendientes en DWES). Para tener datos de prueba, registra primero un usuario en `/register` y después crea una categoría y una petición con la consola de Laravel:
+Usuarios de prueba creados por los seeders (contraseña `password`):
 
-```bash
-docker compose exec app php artisan tinker
-```
+| Usuario | Email |
+|---|---|
+| Mario | `mario@test.com` |
+| Ana | `ana@test.com` |
 
-```php
-App\Models\Categoria::create(['nombre' => 'Medio ambiente']);
-$p = new App\Models\Peticione(['titulo' => 'Más carriles bici', 'descripcion' => 'Queremos más carriles bici en Logroño', 'destinatario' => 'Ayuntamiento de Logroño', 'firmantes' => 0, 'estado' => 'pendiente']);
-$p->user_id = 1;
-$p->categoria_id = 1;
-$p->save();
-exit
-```
+Las peticiones nuevas se crean como **pendientes** y no aparecen en el listado público hasta que se cambia su `estado` a `aceptada` en la base de datos.
 
 ## Comandos útiles
 
@@ -122,8 +121,8 @@ exit
 | La web se ve sin estilos | No se ha copiado `public/build` | Vuelve a construir la imagen con `docker compose build` y revisa el log de la etapa `assets` |
 | `Connection refused` al migrar | MySQL aún no está lista | Espera a que `db` salga como `healthy` en `docker compose ps` |
 | MySQL no arranca y el log habla de ficheros de datos incompatibles | El volumen tiene datos de otra base de datos (por ejemplo, de MariaDB) | `docker compose down -v` y vuelve a empezar (se borran los datos) |
-| Error 500 en "Mis peticiones", "Crear petición" o "Firmar" | Esos métodos aún no existen en `PeticioneController` | Pendiente de programar en DWES; no es un fallo del despliegue |
-| `db:seed` falla | Faker es una dependencia de desarrollo y la imagen se instala con `--no-dev` | Crea los datos de prueba desde la web y con tinker |
+| Al subir fotos sale "failed to upload" | La foto pasa de 5 MB | Usa fotos más pequeñas |
+| Error al guardar una petición con fotos (permiso denegado) | La imagen es antigua y `public/peticiones` no es de `www-data` | `docker compose down`, `docker volume rm` del volumen de fotos y `docker compose up -d --build` |
 
 ## Autor
 

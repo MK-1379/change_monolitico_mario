@@ -2,10 +2,12 @@ services:
 
   app:
     build: .
-    image: mk1379/change-monolitico:v1
+    image: mk1379/change-monolitico:v2
     ports:
       - "8001:80"
     env_file: .env
+    volumes:
+      - fotos-peticiones:/var/www/html/public/peticiones
     depends_on:
       db:
         condition: service_healthy
@@ -26,3 +28,4 @@ services:
 
 volumes:
   datos-change-mono:
+  fotos-peticiones:
